@@ -5,6 +5,8 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
 
 from blog.models import Post
+from blog.forms import EmailPostForm
+from blog.services import send_share_post_email
 
 
 class PostListView(ListView):
@@ -62,3 +64,25 @@ def post_detail(request: HttpRequest,
             'blog/post/detail.html',
             context={'post': post}
             )
+
+
+def post_share(request: HttpRequest, post_id: int) -> HttpResponse:
+
+    post = get_object_or_404(Post, id=post_id, status=Post.Status.PUBLISHED)
+    sent = False
+
+    if request.method == 'POST':
+        form = EmailPostForm(request.POST)
+
+        if form.is_valid():
+            cd = form.cleaned_data
+            post_url = request.build_absolute_uri(
+                    post.get_absolute_url()
+                    )
+            sent = send_share_post_email(cd, post_url, post)
+    else:
+        form = EmailPostForm()
+
+    return render(request, 'blog/post/share.html', {'post': post,
+                                                    'form': form,
+                                                    'sent': sent})

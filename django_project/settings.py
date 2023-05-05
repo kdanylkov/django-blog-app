@@ -11,6 +11,10 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
 from pathlib import Path
+from environs import Env
+
+env = Env()
+env.read_env()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -23,7 +27,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-eg$zptoiwk3cq0$hm&rio+6bm^$pb9+$1yb322k5w#7vuasbc-'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = env.bool('DJANGO_DEBUG', defautl=False)
 
 ALLOWED_HOSTS = []
 
@@ -126,3 +130,11 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# SMTP config
+email = env.dj_email_url("EMAIL_URL")
+EMAIL_HOST = email["EMAIL_HOST"]
+EMAIL_PORT = email["EMAIL_PORT"]
+EMAIL_HOST_PASSWORD = email["EMAIL_HOST_PASSWORD"]
+EMAIL_HOST_USER = email["EMAIL_HOST_USER"]
+EMAIL_USE_SSL = email["EMAIL_USE_SSL"]
