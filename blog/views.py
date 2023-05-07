@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404
+from django.db.models import Count
 from django.http import HttpRequest, HttpResponse
 from django.db.models import SlugField
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
@@ -58,6 +59,7 @@ def post_detail(request: HttpRequest,
                 day: int,
                 post: SlugField) -> HttpResponse:
 
+    # Post itselt
     post = get_object_or_404(
             Post,
             status=Post.Status.PUBLISHED,
@@ -66,13 +68,25 @@ def post_detail(request: HttpRequest,
             publish__month=month,
             publish__day=day
            )
+
+    # Post's comments
     comments = post.comments.filter(active=True)
+
+    # Empty form for users' comments
     form = CommentForm()
+
+    # List of similar posts
+    post_tags_ids = post.tags.values_list('id', flat=True)
+    similar_posts = Post.published.filter(tags__in=post_tags_ids)\
+        .exclude(id=post.id)
+    similar_posts = similar_posts.annotate(same_tags=Count('tags'))\
+        .order_by('-same_tags', '-publish')[:4]
 
     return render(
             request,
             'blog/post/detail.html',
-            context={'post': post, 'comments': comments, 'form': form}
+            context={'post': post, 'comments': comments, 'form': form,
+                     'similar_posts': similar_posts}
             )
 
 
