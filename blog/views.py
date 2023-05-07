@@ -27,7 +27,7 @@ def post_list(request: HttpRequest, tag_slug=None) -> HttpResponse:
     tag = None
 
     if tag_slug:
-        tag = get_object_or_404(Tag, sug=tag_slug)
+        tag = get_object_or_404(Tag, slug=tag_slug)
         post_list = post_list.filter(tags__in=[tag])
 
     # Pagination with for 3 blog posts per page
