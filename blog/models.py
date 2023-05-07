@@ -3,6 +3,8 @@ from django.db import models
 from django.utils import timezone
 from django.contrib.auth.models import User
 
+from taggit.managers import TaggableManager
+
 
 class PublisedManager(models.Manager):
 
@@ -28,6 +30,7 @@ class Post(models.Model):
     status = models.CharField(max_length=2,
                               choices=Status.choices,
                               default=Status.DRAFT)
+    tags = TaggableManager()
     objects = models.Manager()
     published = PublisedManager()
 
@@ -50,3 +53,26 @@ class Post(models.Model):
                     'post': self.slug
                     }
                 )
+
+
+class Comment(models.Model):
+    post = models.ForeignKey(
+            to=Post,
+            on_delete=models.CASCADE,
+            related_name='comments'
+            )
+    name = models.CharField(max_length=80)
+    email = models.EmailField()
+    body = models.TextField()
+    created = models.DateTimeField(auto_now_add=True)
+    updated = models.DateTimeField(auto_now=True)
+    active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['created']
+        indexes = [
+                models.Index(fields=['created']),
+                ]
+
+    def __str__(self):
+        return f'Comment by {self.name} on {self.post}'

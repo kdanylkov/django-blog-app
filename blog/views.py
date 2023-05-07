@@ -3,9 +3,12 @@ from django.http import HttpRequest, HttpResponse
 from django.db.models import SlugField
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
+from django.views.decorators.http import require_POST
+
+from taggit.models import Tag
 
 from blog.models import Post
-from blog.forms import EmailPostForm
+from blog.forms import EmailPostForm, CommentForm
 from blog.services import send_share_post_email
 
 
@@ -19,8 +22,13 @@ class PostListView(ListView):
     template_name = 'blog/post/list.html'
 
 
-def post_list(request: HttpRequest) -> HttpResponse:
+def post_list(request: HttpRequest, tag_slug=None) -> HttpResponse:
     post_list = Post.published.all()
+    tag = None
+
+    if tag_slug:
+        tag = get_object_or_404(Tag, sug=tag_slug)
+        post_list = post_list.filter(tags__in=[tag])
 
     # Pagination with for 3 blog posts per page
     paginator = Paginator(post_list, 3)
@@ -40,7 +48,7 @@ def post_list(request: HttpRequest) -> HttpResponse:
     return render(
             request,
             'blog/post/list.html',
-            context={'posts': posts}
+            context={'posts': posts, 'tag': tag}
             )
 
 
@@ -58,11 +66,13 @@ def post_detail(request: HttpRequest,
             publish__month=month,
             publish__day=day
            )
+    comments = post.comments.filter(active=True)
+    form = CommentForm()
 
     return render(
             request,
             'blog/post/detail.html',
-            context={'post': post}
+            context={'post': post, 'comments': comments, 'form': form}
             )
 
 
@@ -83,6 +93,22 @@ def post_share(request: HttpRequest, post_id: int) -> HttpResponse:
     else:
         form = EmailPostForm()
 
-    return render(request, 'blog/post/share.html', {'post': post,
-                                                    'form': form,
-                                                    'sent': sent})
+    return render(request,
+                  'blog/post/share.html',
+                  context={'post': post, 'form': form, 'sent': sent})
+
+
+@require_POST
+def post_comment(request, post_id):
+    post = get_object_or_404(Post, id=post_id, status=Post.Status.PUBLISHED)
+    comment = None
+
+    form = CommentForm(data=request.POST)
+    if form.is_valid():
+        comment = form.save(commit=False)
+        comment.post = post
+        comment.save()
+    return render(request,
+                  'blog/post/comment.html',
+                  context={'post': post, 'form': form, 'comment': comment}
+                  )
