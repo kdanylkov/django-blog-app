@@ -31,8 +31,8 @@ DEBUG = env.bool('DJANGO_DEBUG', defautl=False)
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
+SITE_ID = 1
 
 INSTALLED_APPS = [
     # Django itself
@@ -42,6 +42,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'django.contrib.sitemaps',
     # 3rd party apps
     'taggit',
 
