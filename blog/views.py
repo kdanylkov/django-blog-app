@@ -5,7 +5,9 @@ from django.db.models import SlugField
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.views.generic import ListView
 from django.views.decorators.http import require_POST
-from django.contrib.postgres.search import SearchVector
+from django.contrib.postgres.search import (
+        TrigramSimilarity
+        )
 
 from taggit.models import Tag
 
@@ -140,8 +142,9 @@ def post_search(request):
         if form.is_valid():
             query = form.cleaned_data['query']
             results = Post.published.annotate(
-                    search=SearchVector('title', 'body')
-                    ).filter(search=query)
+                    similarity=TrigramSimilarity('title', query) +
+                                TrigramSimilarity('body', query)
+                                ).filter(similarity__gt=0.05).order_by('-similarity')
 
     return render(request,
                   'blog/post/search.html',
